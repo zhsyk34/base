@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhsy.dao.UserRoleDao">
+
+    <!--table name-->
+    <sql id="entity">userrole</sql>
+    <!--primary key-->
+    <!--<sql id="id">id</sql>-->
+    <!--all columns-->
+    <sql id="column">userid, roleid</sql>
+
+    <insert id="save">
+        INSERT INTO
+        <include refid="entity"/>
+        (
+        <include refid="column"/>
+        )
+        VALUES
+        (#{userid}, #{roleid})
+    </insert>
+
+    <insert id="saveByAssociation">
+        INSERT INTO
+        <include refid="entity"/>
+        (
+        <include refid="column"/>
+        )
+        VALUES
+        (#{0}, #{1})
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM
+        <include refid="entity"/>
+        WHERE userid = #{userid} AND roleid = #{roleid}
+    </delete>
+
+    <delete id="deleteByAssociation">
+        DELETE FROM
+        <include refid="entity"/>
+        <where>
+            <if test="userid > 0">userid = #{userid}</if>
+            <if test="roleid > 0">AND roleid = #{roleid}</if>
+        </where>
+    </delete>
+
+</mapper>
