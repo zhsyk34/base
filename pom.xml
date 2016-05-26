@@ -12,6 +12,7 @@
     <modules>
         <module>excel</module>
         <module>mybatis</module>
+        <module>audio</module>
     </modules>
 
     <properties>

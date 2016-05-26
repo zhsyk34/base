@@ -15,6 +15,10 @@ import java.io.IOException;
  * Created by Administrator on 16-5-25.
  */
 public class ExcelUtil {
+    /*
+    getLastRowNum:index(start with 0)
+    getLastCellNum:no(start with 1)
+    */
 
     public static HSSFRow getRow(HSSFSheet sheet, int rowIndex) {
         return sheet == null ? null : sheet.getLastRowNum() < rowIndex ? null : sheet.getRow(rowIndex);
@@ -29,9 +33,9 @@ public class ExcelUtil {
         return row == null ? null : getCell(row, colIndex);
     }
 
-    public static void save(HSSFSheet sheet, int rowIndex, int colIndex, Object value) {
+    public static HSSFCell save(HSSFSheet sheet, int rowIndex, int colIndex, Object value) {
         if (sheet == null) {
-            return;
+            return null;
         }
         HSSFRow row = getRow(sheet, rowIndex);
         if (row == null) {
@@ -43,48 +47,51 @@ public class ExcelUtil {
             cell = row.createCell(colIndex);
         }
         setValue(cell, value);
+        return cell;
     }
 
-    //set alignment h&v center in all cell default
-    public static void setAlignment(HSSFSheet sheet) {
-        HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
-        style.setAlignment(HSSFCellStyle.ALIGN_CENTER);
-        style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);
+    /*
+    EXCEL列高度的单位是磅,Apache POI的行高度单位是缇(twip)
+    http://fireinwind.iteye.com/blog/2168655
+    1cm = 567twip
+    */
+    public static void setSize(HSSFSheet sheet, double width, double height) {//TODO
+        final int CM2TWIP = 567;
+        width = width * CM2TWIP;
+        height = height * CM2TWIP;
+        int rowMax = getRowSize(sheet), colMax = getColSize(sheet);
 
-        int rowMax = sheet.getLastRowNum();
-        System.out.println(rowMax);
-        for (int i = 0; i <= rowMax; i++) {
-            HSSFRow row = sheet.getRow(i);
-            int colMax = row.getLastCellNum();
-            System.out.println(colMax);
-            for (int j = 0; j < colMax; j++) {
-                row.getCell(j).setCellStyle(style);
+        if (height > 0) {
+            for (int i = 0; i < rowMax; i++) {
+                HSSFRow row = getRow(sheet, i);
+                if (row != null) {
+                    row.setHeight((short) height);
+                }
+            }
+        }
+
+        for (int i = 0; i < colMax; i++) {
+            if (width > 0) {
+                sheet.setColumnWidth(i, (short) width);
+            } else {
+                sheet.autoSizeColumn(i, true);
             }
         }
     }
 
-    public static void setSize(HSSFSheet sheet, int width, int height) {//TODO
-        final int DPI = 20;
-        width = width * DPI;
-        height = height * DPI;
-        int rowMax = sheet.getLastRowNum();
-        for (int i = 0; i < rowMax; i++) {
-            sheet.getRow(i).setHeight((short) height);
-        }
-
-        int colMax = getLastColNum(sheet);
-        for (int i = 0; i < colMax; i++) {
-            sheet.setColumnWidth(i, width);
-        }
+    public static int getRowSize(HSSFSheet sheet) {
+        return sheet.getLastRowNum() + 1;
     }
 
-    public static int getLastColNum(HSSFSheet sheet) {
-        int rowMax = sheet.getLastRowNum();
+    public static int getColSize(HSSFSheet sheet) {
+        int rowMax = getRowSize(sheet);
         int colMax = 0;
         for (int i = 0; i < rowMax; i++) {
-            colMax = Math.max(sheet.getRow(i).getLastCellNum(), colMax);
+            HSSFRow row = sheet.getRow(i);
+            if (row != null) {
+                colMax = Math.max(row.getLastCellNum(), colMax);
+            }
         }
-        System.out.printf("row:%d,col:%d", rowMax, colMax);
         return colMax;
     }
 
@@ -98,6 +105,10 @@ public class ExcelUtil {
         return true;
     }
 
+    public static boolean merge(HSSFSheet sheet, int firstRow, int lastRow, int firstCol, int lastCol) {
+        return merge(sheet, firstRow, lastRow, firstCol, lastCol, null);
+    }
+
     public static void setValue(HSSFCell cell, Object value) {//TODO
         if (value != null) {
             if (value instanceof String) {
@@ -107,10 +118,6 @@ public class ExcelUtil {
                 cell.setCellValue((Double) value);
             }
         }
-    }
-
-    public static boolean merge(HSSFSheet sheet, int firstRow, int lastRow, int firstCol, int lastCol) {
-        return merge(sheet, firstRow, lastRow, firstCol, lastCol, null);
     }
 
     public static boolean export(HSSFWorkbook workbook, String path) {
@@ -133,5 +140,51 @@ public class ExcelUtil {
             }
         }
         return false;
+    }
+
+    public static void setBaseCss(HSSFSheet sheet) {
+        HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
+        style.setAlignment(HSSFCellStyle.ALIGN_CENTER);
+        style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);
+        // style.setWrapText(true);
+        style.setBorderTop((short) 1);
+        style.setBorderRight((short) 1);
+        style.setBorderBottom((short) 1);
+        style.setBorderLeft((short) 1);
+
+        setCss(sheet, style);
+    }
+
+    public static void setBorder(HSSFSheet sheet) {
+        HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
+        style.setBorderTop((short) 1);
+        style.setBorderRight((short) 1);
+        style.setBorderBottom((short) 1);
+        style.setBorderLeft((short) 1);
+
+        setCss(sheet, style);
+    }
+
+    //set alignment h&v center in all cell default
+    public static void setAlignment(HSSFSheet sheet) {
+        HSSFCellStyle style = sheet.getWorkbook().createCellStyle();
+        style.setAlignment(HSSFCellStyle.ALIGN_CENTER);
+        style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);
+
+        setCss(sheet, style);
+    }
+
+    public static void setCss(HSSFSheet sheet, HSSFCellStyle style) {
+        int rowMax = getRowSize(sheet), colMax = getColSize(sheet);
+        // System.out.println(rowMax + "-" + colMax);
+        for (int i = 0; i < rowMax; i++) {
+            for (int j = 0; j < colMax; j++) {
+                HSSFCell cell = getCell(sheet, i, j);
+                if (cell == null) {
+                    cell = save(sheet, i, j, null);
+                }
+                cell.setCellStyle(style);
+            }
+        }
     }
 }
